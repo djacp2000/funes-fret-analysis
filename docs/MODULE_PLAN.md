@@ -2092,9 +2092,26 @@ must be chosen after representative data review.
   `revision_sha256` in `roi_provenance`; neither Module 21 v2 persistence nor
   D032 numerical/value-sheet behavior changes.
 
+**Implemented finalized revision-chain consumer (D110)**
+
+- Adds the isolated backend `load_finalized_roi_revision_chain(...)` for one
+  explicit non-empty ordered sequence of finalized Module 24 JSON artifacts.
+  It is not connected to Modules 15-23 or any application runner.
+- Strictly replays every artifact against the same exact automatic Module 7/8
+  results. The first revision must be a root; each following revision must name
+  the immediately preceding finalized revision as its parent. The returned
+  terminal result is the only mask result a future consumer could use.
+- Preserves resolved artifact paths and SHA-256 values for every chain entry;
+  rejects duplicate paths and verifies each artifact SHA-256 before and after
+  strict load/replay to fail closed on a changed path.
+- Five focused synthetic tests cover a valid two-revision chain and rejection
+  of inverted order, a non-immediate parent, duplicate paths before replay, and
+  a changed artifact. No `raw_data/`, UI, Module 23, activation, approval, or
+  scientific parameter is involved.
+
 **Deferred next blocks**
 
-- Interactive revision editing, revision-chain consumption, and the versioned
-  Module 23 binding remain separate blocks.
+- Interactive revision editing, propagation of a consumed chain into analysis,
+  and the versioned Module 23 binding remain separate blocks.
 - A concrete corrected-mask activation plan remains prohibited until those
   blocks are implemented and synthetically validated under D102.

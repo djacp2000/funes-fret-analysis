@@ -2,6 +2,16 @@
 
 ## Current state
 
+D110 adds the isolated fail-closed backend consumer for an explicitly ordered,
+non-empty chain of finalized Module 24 artifacts. It replays every artifact
+against the same automatic Module 7/8 provenance, requires root then exact
+immediate-parent ordering, records each resolved path and SHA-256, and returns
+only the terminal replay result for a possible later consumer. It rejects
+duplicate paths before replay and rejects an artifact that changes during
+validation. It is not wired into Modules 15-23, UI, activation, approval, or
+scientific state. Five focused synthetic tests and `compileall` pass; no
+`raw_data/` path was accessed.
+
 D109 closes the Module 17/14 provenance presentation after the integrated D108
 work. Module 17 preserves the effective `mask_source` and `revision_sha256`
 from each completed Module 16 position, and Module 14 writes them in a
@@ -820,5 +830,6 @@ The latest check confirmed:
 
 ## Suggested next-session prompt
 
-Continúa desde D109 solo con un bloque futuro explícitamente autorizado; no
-inicies UI, Module 23, activación real, `raw_data` ni aprobación científica.
+Continúa desde D110 solo con un bloque futuro explícitamente autorizado; no
+propagues cadenas a runners, ni inicies UI, Module 23, activación real,
+`raw_data` ni aprobación científica.

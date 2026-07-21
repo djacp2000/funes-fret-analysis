@@ -2491,6 +2491,23 @@ Module 14/17/21/22 run has 27 tests and the complete suite has 246 tests; no
 `raw_data/` file was read, no UI or Module 23 work was started, and no
 scientific approval occurred.
 
+### D110 - Consume finalized Module 24 revision chains fail-closed (2026-07-21)
+
+Implement only an isolated backend consumer for an explicitly ordered,
+non-empty sequence of finalized Module 24 v1 JSON artifacts for one exact
+automatic Module 7/8 position. It reloads and strictly replay-verifies every
+artifact with the same automatic provenance. The first artifact must be a root;
+every later artifact must declare the immediately preceding revision SHA-256 as
+its parent. The immutable returned chain retains each resolved path, artifact
+SHA-256, replay result, and terminal result; no analysis runner consumes it yet.
+
+Reject non-path or empty input, repeated resolved paths before replay, malformed
+or stale artifacts, an inverted chain, a skipped/forked parent, and a file whose
+SHA-256 changes between pre- and post-validation reads. This is audit-only and
+does not add UI, Module 23 binding, runner propagation, raw-data access,
+activation, D046 mutation, approval, or a scientific conclusion. Five focused
+tests use only synthetic masks and temporary artifact paths.
+
 ### P022 - Manual ROI mask revision
 
 Resolved for sequencing by D102 and for the first backend implementation by

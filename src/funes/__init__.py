@@ -220,6 +220,12 @@ from .roi_revision_persistence import (
     load_roi_revision_artifact,
     roi_revision_artifact_payload_sha256,
 )
+from .roi_revision_chain import (
+    RoiRevisionChainEntry,
+    RoiRevisionChainError,
+    RoiRevisionChainResult,
+    load_finalized_roi_revision_chain,
+)
 from .quantitative_background import (
     BackgroundPixelSource,
     FrameBackgroundEstimate,
@@ -541,6 +547,9 @@ __all__ = [
     "RoiPixel",
     "RoiRevisionArtifactError",
     "RoiRevisionArtifactWriteResult",
+    "RoiRevisionChainEntry",
+    "RoiRevisionChainError",
+    "RoiRevisionChainResult",
     "RoiRevisionError",
     "RoiRevisionFinalizationState",
     "RoiRevisionOperation",
@@ -692,6 +701,7 @@ __all__ = [
     "load_assigned_acquisition",
     "load_reviewed_analysis_package",
     "load_roi_revision_artifact",
+    "load_finalized_roi_revision_chain",
     "initialize_acquisition_review",
     "roi_filtering_sha256",
     "roi_label_sha256",
