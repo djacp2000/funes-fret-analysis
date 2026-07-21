@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "funes"
+version = "0.1.0"
+description = "Modular analysis tools for two-channel FRET time series exported from SlideBook."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "scikit-image>=0.22",
+    "scikit-learn>=1.4",
+    "scipy>=1.11",
+    "tifffile>=2024.8.10",
+]
+
+[project.optional-dependencies]
+cellpose = [
+    "cellpose>=4.0",
+]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.setuptools.packages.find]
+where = ["src"]

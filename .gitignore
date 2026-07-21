@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Source acquisitions and generated analysis artifacts remain outside version control.
+raw_data/
+outputs/
