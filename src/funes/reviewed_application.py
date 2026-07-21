@@ -37,6 +37,7 @@ from .experiment_roi_review_persistence import (
 from .module14_exporter import Module14ExportResult
 from .position_analysis import PositionAnalysisConfig
 from .roi_revision import RoiMaskRevision
+from .roi_revision_persistence import load_roi_revision_artifact
 from .reviewed_analysis_persistence import (
     REVIEWED_ANALYSIS_PACKAGE_SUFFIX,
     ReviewedAnalysisPackageWriteResult,
@@ -60,6 +61,32 @@ class ReviewedApplicationRunError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class ResolvedRoiRevisionArtifact:
+    """One explicit Module 24 artifact verified against automatic provenance."""
+
+    position_key: PositionKey
+    path: Path
+    sha256: str
+    revision_sha256: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.position_key, PositionKey):
+            raise TypeError("position_key must be a PositionKey")
+        path = Path(self.path)
+        for name, value in (
+            ("sha256", self.sha256),
+            ("revision_sha256", self.revision_sha256),
+        ):
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError(f"{name} must be lowercase SHA-256")
+        object.__setattr__(self, "path", path)
+
+
+@dataclass(frozen=True, slots=True)
 class ReviewedApplicationRunResult:
     """Complete audit trail and published artifacts for one Module 22 run."""
 
@@ -72,6 +99,7 @@ class ReviewedApplicationRunResult:
     analysis: AcquisitionAnalysisResult
     workbook_exports: tuple[ReviewedExperimentExportResult, ...]
     analysis_package: ReviewedAnalysisPackageWriteResult
+    resolved_roi_revision_artifacts: tuple[ResolvedRoiRevisionArtifact, ...] = ()
 
     def __post_init__(self) -> None:
         output_directory = Path(self.output_directory)
@@ -140,9 +168,30 @@ class ReviewedApplicationRunResult:
                 "analysis_package must use the fixed application package path"
             )
 
+        artifacts = tuple(self.resolved_roi_revision_artifacts)
+        seen_keys: set[PositionKey] = set()
+        for artifact in artifacts:
+            if not isinstance(artifact, ResolvedRoiRevisionArtifact):
+                raise TypeError(
+                    "resolved_roi_revision_artifacts must contain "
+                    "ResolvedRoiRevisionArtifact values"
+                )
+            if artifact.position_key in seen_keys:
+                raise ValueError(
+                    "resolved_roi_revision_artifacts cannot duplicate positions"
+                )
+            seen_keys.add(artifact.position_key)
+            position = _position_result_for_key(self.analysis, artifact.position_key)
+            if position.revision_sha256 != artifact.revision_sha256:
+                raise ValueError(
+                    "resolved ROI revision artifact must match the published "
+                    "position revision SHA-256"
+                )
+
         object.__setattr__(self, "output_directory", output_directory)
         object.__setattr__(self, "review_snapshot_path", snapshot_path)
         object.__setattr__(self, "workbook_exports", exports)
+        object.__setattr__(self, "resolved_roi_revision_artifacts", artifacts)
 
     @property
     def workbook_paths(self) -> tuple[Path, ...]:
@@ -161,6 +210,7 @@ def run_reviewed_application(
     segmentation_registry: SegmentationEngineRegistry | None = None,
     context: Mapping[str, MetadataValue] | None = None,
     roi_revisions: Mapping[PositionKey, RoiMaskRevision] | None = None,
+    roi_revision_artifact_paths: Mapping[PositionKey, Path | str] | None = None,
 ) -> ReviewedApplicationRunResult:
     """Run Modules 1-14 and persist D098 evidence from existing review state.
 
@@ -169,7 +219,11 @@ def run_reviewed_application(
     this function cannot inspect a field, approve a profile, or repair review
     state.  Published artifacts appear together under a new output directory.
     Optional revisions are caller-supplied in-memory Module 24 contracts and
-    are validated fail-closed by Module 20 before any experiment analysis.
+    are validated fail-closed by Module 20 before any experiment analysis.  An
+    additional explicit artifact-path mapping may resolve finalized Module 24
+    artifacts without replacing the existing in-memory route.  Each path is
+    verified against a deterministic automatic preflight before the published
+    analysis starts; a position cannot be supplied by both routes.
     """
 
     destination = Path(output_directory).resolve(strict=False)
@@ -216,13 +270,25 @@ def run_reviewed_application(
         review_setup = initialize_acquisition_review(
             acquisition, experiment_configs
         )
+        resolved_artifacts, artifact_revisions = _resolve_roi_revision_artifacts(
+            review_setup,
+            review_orchestrator,
+            position_configs,
+            segmentation_registry=segmentation_registry,
+            context=context,
+            roi_revision_artifact_paths=roi_revision_artifact_paths,
+        )
+        combined_revisions = _combine_roi_revision_routes(
+            roi_revisions,
+            artifact_revisions,
+        )
         analysis = run_reviewed_acquisition_analysis(
             review_setup,
             review_orchestrator,
             position_configs,
             segmentation_registry=segmentation_registry,
             context=context,
-            roi_revisions=roi_revisions,
+            roi_revisions=combined_revisions,
         )
     except Exception as exc:
         raise ReviewedApplicationRunError(
@@ -288,6 +354,7 @@ def run_reviewed_application(
         analysis=analysis,
         workbook_exports=relocated_exports,
         analysis_package=relocated_package,
+        resolved_roi_revision_artifacts=resolved_artifacts,
     )
 
 
@@ -311,3 +378,121 @@ def _relocate_workbook_export(
 
 def _file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _resolve_roi_revision_artifacts(
+    review_setup: AcquisitionReviewSetupResult,
+    review_orchestrator: ExperimentRoiReviewOrchestrator,
+    position_configs: Mapping[PositionKey, PositionAnalysisConfig],
+    *,
+    segmentation_registry: SegmentationEngineRegistry | None,
+    context: Mapping[str, MetadataValue] | None,
+    roi_revision_artifact_paths: Mapping[PositionKey, Path | str] | None,
+) -> tuple[tuple[ResolvedRoiRevisionArtifact, ...], dict[PositionKey, RoiMaskRevision]]:
+    """Resolve explicit root artifacts without changing the in-memory API."""
+
+    if roi_revision_artifact_paths is None:
+        return (), {}
+    if not isinstance(roi_revision_artifact_paths, Mapping):
+        raise TypeError(
+            "roi_revision_artifact_paths must be a mapping keyed by PositionKey"
+        )
+
+    expected_keys = tuple(pair.position_key for pair in review_setup.assigned_pairs)
+    supplied = dict(roi_revision_artifact_paths)
+    for key, value in supplied.items():
+        if not isinstance(key, PositionKey):
+            raise TypeError("roi_revision_artifact_paths keys must be PositionKey values")
+        if not isinstance(value, (Path, str)):
+            raise TypeError(
+                "roi_revision_artifact_paths values must be Path or str values"
+            )
+    unexpected = set(supplied) - set(expected_keys)
+    if unexpected:
+        raise ValueError(
+            "roi_revision_artifact_paths may contain only positions from the "
+            "complete acquisition scope; unexpected "
+            + ", ".join(_display_key(key) for key in sorted(unexpected, key=_display_key))
+        )
+
+    # Module 24 verification needs the exact automatic Module 7/8 objects.
+    # This preflight is never published and leaves the caller's in-memory route
+    # untouched; the subsequent run is the sole published analysis.
+    automatic = run_reviewed_acquisition_analysis(
+        review_setup,
+        review_orchestrator,
+        position_configs,
+        segmentation_registry=segmentation_registry,
+        context=context,
+    )
+    automatic_by_key = {
+        position.pair.position_key: position
+        for experiment in automatic.experiment_results
+        for position in experiment.position_results
+    }
+    resolved: list[ResolvedRoiRevisionArtifact] = []
+    revisions: dict[PositionKey, RoiMaskRevision] = {}
+    for key in expected_keys:
+        raw_path = supplied.get(key)
+        if raw_path is None:
+            continue
+        path = Path(raw_path).resolve(strict=False)
+        before = _file_sha256(path)
+        position = automatic_by_key[key]
+        replayed = load_roi_revision_artifact(
+            path,
+            position.segmentation,
+            position.roi_filtering,
+            key,
+        )
+        after = _file_sha256(path)
+        if after != before:
+            raise ReviewedApplicationRunError(
+                f"ROI revision artifact changed while loading it: {path}"
+            )
+        revision = replayed.revision
+        resolved.append(
+            ResolvedRoiRevisionArtifact(
+                position_key=key,
+                path=path,
+                sha256=before,
+                revision_sha256=revision.sha256,
+            )
+        )
+        revisions[key] = revision
+    return tuple(resolved), revisions
+
+
+def _combine_roi_revision_routes(
+    in_memory: Mapping[PositionKey, RoiMaskRevision] | None,
+    artifact_revisions: Mapping[PositionKey, RoiMaskRevision],
+) -> Mapping[PositionKey, RoiMaskRevision] | None:
+    if in_memory is None:
+        return dict(artifact_revisions) or None
+    if not isinstance(in_memory, Mapping):
+        # Preserve Module 20's existing public error wording and validation.
+        return in_memory
+    supplied = dict(in_memory)
+    overlap = set(supplied) & set(artifact_revisions)
+    if overlap:
+        raise ReviewedApplicationRunError(
+            "a position cannot use both in-memory and artifact-path ROI revision "
+            "routes: "
+            + ", ".join(_display_key(key) for key in sorted(overlap, key=_display_key))
+        )
+    return {**supplied, **artifact_revisions}
+
+
+def _position_result_for_key(
+    analysis: AcquisitionAnalysisResult,
+    key: PositionKey,
+):
+    for experiment in analysis.experiment_results:
+        for position in experiment.position_results:
+            if position.pair.position_key == key:
+                return position
+    raise ValueError(f"analysis has no position {_display_key(key)}")
+
+
+def _display_key(key: PositionKey) -> str:
+    return f"{key.experiment} / {key.capture} / {key.position}"

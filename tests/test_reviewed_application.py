@@ -17,6 +17,8 @@ from funes.experiment_roi_review_persistence import (
 )
 from funes.reviewed_analysis_persistence import load_reviewed_analysis_package
 from funes.roi_revision import finalize_roi_revision
+from funes.roi_revision_persistence import export_roi_revision_artifact
+from funes.roi_revision_replay import replay_roi_revision
 from funes.reviewed_application import (
     APPLICATION_ANALYSIS_PACKAGE_NAME,
     APPLICATION_WORKBOOK_DIRECTORY,
@@ -224,6 +226,83 @@ class ReviewedApplicationTests(unittest.TestCase):
                 )
 
         analysis_spy.assert_not_called()
+        self.assertFalse(self.output.exists())
+
+    def test_resolves_verified_finalized_artifact_path_without_replacing_memory_route(self) -> None:
+        automatic = run_reviewed_acquisition_analysis(
+            self.setup,
+            self.reviewed,
+            self.configs,
+        )
+        artifact_key = self.setup.assigned_pairs[-1].position_key
+        automatic_position = automatic.result_for_experiment(
+            artifact_key.experiment
+        ).position_results[0]
+        artifact_revision = finalize_roi_revision(
+            _revision_for(automatic_position),
+            finalized_at="2026-07-21T22:30:00-04:00",
+        )
+        artifact_result = replay_roi_revision(
+            artifact_revision,
+            automatic_position.segmentation,
+            automatic_position.roi_filtering,
+            artifact_key,
+        )
+        artifact_path = self.artifact_root / "finalized-revision.json"
+        written = export_roi_revision_artifact(artifact_result, artifact_path)
+
+        result = run_reviewed_application(
+            self.upstream.root,
+            self.rules,
+            self.snapshot,
+            self.configs,
+            self.output,
+            roi_revision_artifact_paths={artifact_key: artifact_path},
+        )
+
+        self.assertEqual(len(result.resolved_roi_revision_artifacts), 1)
+        resolved = result.resolved_roi_revision_artifacts[0]
+        self.assertEqual(resolved.position_key, artifact_key)
+        self.assertEqual(resolved.path, artifact_path.resolve())
+        self.assertEqual(resolved.sha256, written.sha256)
+        self.assertEqual(resolved.revision_sha256, artifact_revision.sha256)
+        revised = result.analysis.experiment_results[1].position_results[0]
+        self.assertEqual(revised.mask_source, "manual_revision")
+        self.assertEqual(revised.revision_sha256, artifact_revision.sha256)
+        restored = load_reviewed_analysis_package(result.analysis_package.path)
+        self.assertEqual(
+            restored.analysis.experiment_results[1].position_results[0].revision_sha256,
+            artifact_revision.sha256,
+        )
+
+    def test_rejects_overlapping_in_memory_and_artifact_routes(self) -> None:
+        automatic = run_reviewed_acquisition_analysis(
+            self.setup,
+            self.reviewed,
+            self.configs,
+        )
+        key = self.setup.assigned_pairs[-1].position_key
+        position = automatic.result_for_experiment(key.experiment).position_results[0]
+        revision = finalize_roi_revision(
+            _revision_for(position),
+            finalized_at="2026-07-21T22:35:00-04:00",
+        )
+        artifact_path = self.artifact_root / "overlap.json"
+        export_roi_revision_artifact(
+            replay_roi_revision(revision, position.segmentation, position.roi_filtering, key),
+            artifact_path,
+        )
+
+        with self.assertRaisesRegex(ReviewedApplicationRunError, "both in-memory"):
+            run_reviewed_application(
+                self.upstream.root,
+                self.rules,
+                self.snapshot,
+                self.configs,
+                self.output,
+                roi_revisions={key: revision},
+                roi_revision_artifact_paths={key: artifact_path},
+            )
         self.assertFalse(self.output.exists())
 
     def test_unreviewed_snapshot_fails_before_any_experiment_analysis_or_output(self) -> None:
