@@ -2,6 +2,17 @@
 
 ## Current state
 
+D111 integrates one already validated Module 24 revision chain only at the
+Modules 5--13 position-runner boundary. It accepts `RoiRevisionChainResult`,
+never artifact paths, and keeps that route mutually exclusive with the existing
+single root-revision input. The runner revalidates chain ordering, binds its
+terminal result to the fresh exact automatic Module 7/8 provenance, retains the
+complete chain on `PositionAnalysisResult`, and routes Modules 10--13 solely
+through the terminal geometry audit. Synthetic temporary-path tests cover a
+valid two-artifact terminal mask plus fail-closed bifurcated, incompatible, and
+mixed-route inputs before Module 10. No `raw_data/`, UI, Module 23, activation,
+or scientific approval was used.
+
 D110 adds the isolated fail-closed backend consumer for an explicitly ordered,
 non-empty chain of finalized Module 24 artifacts. It replays every artifact
 against the same automatic Module 7/8 provenance, requires root then exact
@@ -830,6 +841,6 @@ The latest check confirmed:
 
 ## Suggested next-session prompt
 
-Continúa desde D110 solo con un bloque futuro explícitamente autorizado; no
-propagues cadenas a runners, ni inicies UI, Module 23, activación real,
-`raw_data` ni aprobación científica.
+Continúa desde D111 solo con un bloque futuro explícitamente autorizado; no
+propagues cadenas más allá del runner de posición, ni inicies UI, Module 23,
+activación real, `raw_data` ni aprobación científica.

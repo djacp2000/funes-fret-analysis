@@ -2508,6 +2508,23 @@ does not add UI, Module 23 binding, runner propagation, raw-data access,
 activation, D046 mutation, approval, or a scientific conclusion. Five focused
 tests use only synthetic masks and temporary artifact paths.
 
+### D111 - Integrate only validated Module 24 chains in the position runner (2026-07-21)
+
+Extend only the Modules 5--13 position-runner boundary with an optional
+already-validated `RoiRevisionChainResult`. It is mutually exclusive with the
+existing optional root `RoiMaskRevision` input and does not accept or load
+artifact paths. Revalidate the chain structure at the runner boundary, compare
+its terminal source identity with the automatic Module 7/8 provenance produced
+in that same call, and fail before Module 10 if it is invalid, bifurcated, or
+incompatible.
+
+Retain the exact complete chain on `PositionAnalysisResult`, retain its exact
+terminal result as `roi_revision`, and route Modules 10--13 solely through the
+terminal geometry audit. This authorizes neither propagation to experiment,
+acquisition, or application runners nor UI, Module 23 binding, raw-data access,
+activation, approval, or a scientific conclusion. Tests use synthetic masks and
+temporary artifact paths only.
+
 ### P022 - Manual ROI mask revision
 
 Resolved for sequencing by D102 and for the first backend implementation by
@@ -2526,6 +2543,6 @@ verified Module 22 artifact-path route, and separate Module 17/14
 provides immutable finalized/replayable contracts, exact automatic-mask binding, deterministic
 add/delete/replace/restore semantics, geometry recomputation, strict JSON
 persistence, and synthetic quantitative integration through one acquisition.
-Interactive editing ergonomics, revision-chain consumption, and the versioned
-Module 23 revision binding remain separate future blocks. No real activation
-authority or scientific acceptance exists.
+Interactive editing ergonomics, revision-chain propagation beyond the position
+runner, and the versioned Module 23 revision binding remain separate future
+blocks. No real activation authority or scientific acceptance exists.

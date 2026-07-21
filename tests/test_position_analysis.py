@@ -1,4 +1,6 @@
 import sys
+import shutil
+import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -37,6 +39,13 @@ from funes.roi_revision import (
     RoiRevisionSourceIdentity,
     finalize_roi_revision,
 )
+from funes.roi_revision_chain import (
+    RoiRevisionChainEntry,
+    RoiRevisionChainResult,
+    load_finalized_roi_revision_chain,
+)
+from funes.roi_revision_persistence import export_roi_revision_artifact
+from funes.roi_revision_replay import replay_roi_revision
 from funes.segmentation_channel import SegmentationChannelSelectionConfig
 from funes.segmentation_preprocessing import IdentitySegmentationPreprocessor
 from funes.segmentation_review import SegmentationReviewState
@@ -152,6 +161,160 @@ class PositionAnalysisTests(unittest.TestCase):
         self.assertEqual(len(revised.temporal_intensity.records), 8)
         self.assertEqual(len(revised.fret.records), 4)
         self.assertIsNone(orchestrator.experiments[0].review_state.global_approval)
+
+    def test_validated_revision_chain_supplies_only_its_terminal_mask(self) -> None:
+        pair = _pair(self.a1)
+        orchestrator = _review_all_orchestrator(
+            (self.a1,), self.configuration, inspected=(self.a1,)
+        )
+        automatic = run_reviewed_position_analysis(pair, orchestrator, _analysis_config())
+        root = finalize_roi_revision(
+            _revision_for(automatic), finalized_at="2026-07-21T19:00:00-04:00"
+        )
+        root_result = replay_roi_revision(
+            root, automatic.segmentation, automatic.roi_filtering, self.a1
+        )
+        child = finalize_roi_revision(
+            RoiMaskRevision(
+                source=root.source,
+                operations=(
+                    RoiRevisionOperation.replace(
+                        2, ((5, 6),), reason="Move synthetic revised support."
+                    ),
+                ),
+                editor="synthetic-chain-editor",
+                parent_revision_sha256=root.sha256,
+            ),
+            finalized_at="2026-07-21T19:05:00-04:00",
+        )
+        child_result = replay_roi_revision(
+            child,
+            automatic.segmentation,
+            automatic.roi_filtering,
+            self.a1,
+            parent_result=root_result,
+        )
+        directory = Path(tempfile.mkdtemp(prefix="funes_position_chain_"))
+        self.addCleanup(shutil.rmtree, directory)
+        root_path = directory / "root.json"
+        child_path = directory / "child.json"
+        export_roi_revision_artifact(root_result, root_path)
+        export_roi_revision_artifact(child_result, child_path)
+        chain = load_finalized_roi_revision_chain(
+            (root_path, child_path),
+            automatic.segmentation,
+            automatic.roi_filtering,
+            self.a1,
+        )
+
+        revised = run_reviewed_position_analysis(
+            pair, orchestrator, _analysis_config(), roi_revision_chain=chain
+        )
+
+        self.assertIs(revised.roi_revision_chain, chain)
+        self.assertIs(revised.roi_revision, chain.terminal_result)
+        self.assertIs(
+            revised.measurement_roi_filtering,
+            chain.terminal_result.geometry_audit,
+        )
+        self.assertEqual(len(revised.roi_revision_chain.entries), 2)
+        self.assertEqual(revised.revision_sha256, child.sha256)
+        self.assertEqual(
+            tuple(
+                tuple(point)
+                for point in np.argwhere(
+                    revised.measurement_roi_filtering.filtered_label_image == 2
+                )
+            ),
+            ((5, 6),),
+        )
+        self.assertEqual({record.roi_label for record in revised.temporal_intensity.records}, {1, 2})
+
+    def test_invalid_or_incompatible_chain_fails_before_quantitative_background(self) -> None:
+        pair = _pair(self.a1)
+        orchestrator = _review_all_orchestrator(
+            (self.a1, self.a2), self.configuration, inspected=(self.a1, self.a2)
+        )
+        automatic = run_reviewed_position_analysis(pair, orchestrator, _analysis_config())
+        root = finalize_roi_revision(
+            _revision_for(automatic), finalized_at="2026-07-21T19:10:00-04:00"
+        )
+        root_result = replay_roi_revision(
+            root, automatic.segmentation, automatic.roi_filtering, self.a1
+        )
+        entry = RoiRevisionChainEntry(Path("synthetic-root.json"), "a" * 64, root_result)
+        valid_chain = RoiRevisionChainResult((entry,))
+        sibling = finalize_roi_revision(
+            RoiMaskRevision(
+                source=root.source,
+                operations=(
+                    RoiRevisionOperation.replace(
+                        2, ((5, 6),), reason="First synthetic branch."
+                    ),
+                ),
+                editor="synthetic-chain-editor",
+                parent_revision_sha256=root.sha256,
+            ),
+            finalized_at="2026-07-21T19:15:00-04:00",
+        )
+        sibling_result = replay_roi_revision(
+            sibling,
+            automatic.segmentation,
+            automatic.roi_filtering,
+            self.a1,
+            parent_result=root_result,
+        )
+        forked_chain = object.__new__(RoiRevisionChainResult)
+        object.__setattr__(
+            forked_chain,
+            "entries",
+            (
+                entry,
+                RoiRevisionChainEntry(Path("synthetic-child.json"), "b" * 64, sibling_result),
+                RoiRevisionChainEntry(Path("synthetic-sibling.json"), "c" * 64, sibling_result),
+            ),
+        )
+        foreign_pair = _pair(self.a2)
+        foreign_automatic = run_reviewed_position_analysis(
+            foreign_pair, orchestrator, _analysis_config()
+        )
+        foreign_revision = finalize_roi_revision(
+            _revision_for(foreign_automatic), finalized_at="2026-07-21T19:20:00-04:00"
+        )
+        foreign_result = replay_roi_revision(
+            foreign_revision,
+            foreign_automatic.segmentation,
+            foreign_automatic.roi_filtering,
+            self.a2,
+        )
+        foreign_chain = RoiRevisionChainResult(
+            (
+                RoiRevisionChainEntry(
+                    Path("synthetic-foreign.json"), "d" * 64, foreign_result
+                ),
+            )
+        )
+        bomb_config = _analysis_config(background=_BombBackground())
+
+        with self.subTest("mutually exclusive routes"):
+            with self.assertRaisesRegex(PositionAnalysisError, "mutually exclusive"):
+                run_reviewed_position_analysis(
+                    pair,
+                    orchestrator,
+                    bomb_config,
+                    roi_revision=root,
+                    roi_revision_chain=valid_chain,
+                )
+        with self.subTest("bifurcated"):
+            with self.assertRaisesRegex(PositionAnalysisError, "does not name the preceding"):
+                run_reviewed_position_analysis(
+                    pair, orchestrator, bomb_config, roi_revision_chain=forked_chain
+                )
+        with self.subTest("incompatible"):
+            with self.assertRaisesRegex(PositionAnalysisError, "incompatible"):
+                run_reviewed_position_analysis(
+                    pair, orchestrator, bomb_config, roi_revision_chain=foreign_chain
+                )
 
     def test_invalid_revision_fails_before_quantitative_background(self) -> None:
         pair = _pair(self.a1)

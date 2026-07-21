@@ -2109,9 +2109,23 @@ must be chosen after representative data review.
   a changed artifact. No `raw_data/`, UI, Module 23, activation, approval, or
   scientific parameter is involved.
 
+**Implemented position-runner chain integration (D111)**
+
+- Extends only `run_reviewed_position_analysis(...)` with one optional,
+  already-validated `RoiRevisionChainResult`, mutually exclusive with its
+  existing single-root revision input. It does not load artifact paths.
+- Revalidates the supplied chain structure and requires its terminal source
+  identity to match the newly produced automatic Module 7/8 provenance for the
+  exact position. It preserves the complete chain in `PositionAnalysisResult`
+  and passes only `terminal_result.geometry_audit` to Modules 10--13.
+- Synthetic temporary-path tests cover a two-artifact chain whose terminal mask
+  differs from its root, plus fail-closed rejection before Module 10 for a
+  bifurcated chain, incompatible automatic provenance, and mixed input routes.
+  No `raw_data/`, UI, Module 23, activation, or scientific approval is used.
+
 **Deferred next blocks**
 
-- Interactive revision editing, propagation of a consumed chain into analysis,
-  and the versioned Module 23 binding remain separate blocks.
+- Interactive revision editing, propagation of a consumed chain beyond the
+  position runner, and the versioned Module 23 binding remain separate blocks.
 - A concrete corrected-mask activation plan remains prohibited until those
   blocks are implemented and synthetically validated under D102.

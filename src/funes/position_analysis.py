@@ -39,7 +39,8 @@ from .roi_geometry import (
     RoiGeometryFilterConfig,
     filter_segmentation_rois,
 )
-from .roi_revision import RoiMaskRevision, RoiRevisionError
+from .roi_revision import RoiMaskRevision, RoiRevisionError, RoiRevisionSourceIdentity
+from .roi_revision_chain import RoiRevisionChainError, RoiRevisionChainResult
 from .roi_revision_replay import RoiRevisionResult, replay_roi_revision
 from .segmentation_channel import (
     SegmentationChannelSelection,
@@ -146,6 +147,7 @@ class PositionAnalysisResult:
     temporal_intensity: TemporalIntensityResult
     fret: FretCalculationResult
     roi_revision: RoiRevisionResult | None = None
+    roi_revision_chain: RoiRevisionChainResult | None = None
     issues: tuple[PipelineIssue, ...] = ()
 
     def __post_init__(self) -> None:
@@ -169,10 +171,29 @@ class PositionAnalysisResult:
             raise ValueError(
                 "roi_filtering must retain the exact segmentation result as provenance"
             )
+        if self.roi_revision_chain is not None:
+            if not isinstance(self.roi_revision_chain, RoiRevisionChainResult):
+                raise TypeError(
+                    "roi_revision_chain must be a RoiRevisionChainResult when present"
+                )
+            if self.roi_revision is not self.roi_revision_chain.terminal_result:
+                raise ValueError(
+                    "roi_revision_chain must retain the exact terminal ROI revision result"
+                )
+            expected_source = RoiRevisionSourceIdentity.from_automatic_results(
+                self.pair.position_key,
+                self.segmentation,
+                self.roi_filtering,
+            )
+            if self.roi_revision_chain.terminal_result.source_identity != expected_source:
+                raise ValueError(
+                    "roi_revision_chain terminal result is incompatible with the "
+                    "automatic Module 7 and Module 8 provenance"
+                )
         if self.roi_revision is not None:
             if not isinstance(self.roi_revision, RoiRevisionResult):
                 raise TypeError("roi_revision must be a RoiRevisionResult when present")
-            if (
+            if self.roi_revision_chain is None and (
                 self.roi_revision.original_segmentation is not self.segmentation
                 or self.roi_revision.original_filtering is not self.roi_filtering
             ):
@@ -213,14 +234,18 @@ def run_reviewed_position_analysis(
     segmentation_registry: SegmentationEngineRegistry | None = None,
     context: Mapping[str, MetadataValue] | None = None,
     roi_revision: RoiMaskRevision | None = None,
+    roi_revision_chain: RoiRevisionChainResult | None = None,
 ) -> PositionAnalysisResult:
     """Run one assigned, review-covered position through Modules 5 through 13.
 
     Review coverage is consumed but never created.  A required D088 manual target
     must have its own inspection; any other position must already be covered by the
     isolated D089 ledger.  This function exposes no approval or ROI mutation path.
-    A supplied Module 24 revision is replayed fail-closed against the automatic
-    Module 7/8 results before quantitative background estimation begins.
+    A supplied Module 24 root revision is replayed fail-closed against the
+    automatic Module 7/8 results. Alternatively, one already-validated revision
+    chain may supply its terminal result. The two routes are mutually exclusive;
+    the complete chain remains provenance while Modules 10--13 receive only its
+    terminal measurement mask.
     """
 
     if not isinstance(pair, TiffPair):
@@ -233,6 +258,16 @@ def run_reviewed_position_analysis(
         raise TypeError("config must be a PositionAnalysisConfig")
     if roi_revision is not None and not isinstance(roi_revision, RoiMaskRevision):
         raise TypeError("roi_revision must be a RoiMaskRevision when present")
+    if roi_revision_chain is not None and not isinstance(
+        roi_revision_chain, RoiRevisionChainResult
+    ):
+        raise TypeError(
+            "roi_revision_chain must be a RoiRevisionChainResult when present"
+        )
+    if roi_revision is not None and roi_revision_chain is not None:
+        raise PositionAnalysisError(
+            "roi_revision and roi_revision_chain are mutually exclusive"
+        )
 
     experiment = pair.position_key.experiment
     if experiment is None:
@@ -295,6 +330,26 @@ def run_reviewed_position_analysis(
                 "supplied Module 24 ROI revision is not eligible for quantitative "
                 f"analysis of {experiment} / {pair.position_key.capture} / "
                 f"{pair.position_key.position}: {exc}"
+            ) from exc
+    elif roi_revision_chain is not None:
+        try:
+            validated_chain = RoiRevisionChainResult(roi_revision_chain.entries)
+            expected_source = RoiRevisionSourceIdentity.from_automatic_results(
+                pair.position_key,
+                segmentation,
+                roi_filtering,
+            )
+            if validated_chain.terminal_result.source_identity != expected_source:
+                raise RoiRevisionChainError(
+                    "terminal result is incompatible with the current automatic "
+                    "Module 7 and Module 8 provenance"
+                )
+            revision_result = roi_revision_chain.terminal_result
+        except RoiRevisionChainError as exc:
+            raise PositionAnalysisError(
+                "supplied finalized Module 24 ROI revision chain is not eligible "
+                f"for quantitative analysis of {experiment} / "
+                f"{pair.position_key.capture} / {pair.position_key.position}: {exc}"
             ) from exc
 
     measurement_filtering = (
@@ -379,6 +434,7 @@ def run_reviewed_position_analysis(
         temporal_intensity=temporal_intensity,
         fret=fret,
         roi_revision=revision_result,
+        roi_revision_chain=roi_revision_chain,
         issues=issues,
     )
 
