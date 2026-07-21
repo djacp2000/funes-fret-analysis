@@ -2459,6 +2459,38 @@ ROI/mask editing is not part of this decision. Under D102, a concrete plan for
 the intended corrected-mask workflow waits for Module 24 integration and a
 versioned Module 23 revision binding.
 
+### D109 - Close D108 provenance presentation and finalized-artifact routes (2026-07-21)
+
+Consolidate the independently integrated Module 24 human-finalization and
+Module 22 finalized-artifact route with the narrow Module 17/14 export close.
+The Module 24 finalizer writes one new strict v1 JSON artifact from a supplied
+draft at a timezone-aware timestamp, deterministically replays it against the
+exact automatic Module 7/8 provenance, reloads it, and compares trace, masks,
+and hashes. It never overwrites an existing artifact; a failed post-write check
+removes only the newly written, unverified destination. This is an
+administrative audit record, not scientific acceptance or a D046 mutation.
+
+Module 22 may resolve one explicit artifact path per in-scope position instead
+of the existing in-memory route, but never both. It hashes the path before and
+after strict loading/replay validation against unpublished automatic Module 7/8
+results, retains the resolved path, artifact SHA-256, and revision SHA-256, and
+then passes the verified root revision through the unchanged Module 20 route.
+The published mixed graph remains the exact Module 21
+`funes.module21.reviewed_analysis_package.v2` graph; no package migration,
+replay, or change to D032 value sheets is introduced.
+
+Module 17 must preserve each Module 16 result's effective `mask_source` and
+optional `revision_sha256` in its exact Module 14 input. Module 14 records
+those fields in a separate `roi_provenance` sheet, with a blank hash cell for
+an automatic mask and the exact finalized revision hash for `manual_revision`.
+This provenance is audit-only: it changes no numerical values, ROI labels,
+workbook value layout, review coverage, activation authority, or scientific
+status. Synthetic tests explicitly verify both fields, Module 21 v2 mixed
+round-trip provenance, and Module 22's finalized artifact route. The focused
+Module 14/17/21/22 run has 27 tests and the complete suite has 246 tests; no
+`raw_data/` file was read, no UI or Module 23 work was started, and no
+scientific approval occurred.
+
 ### P022 - Manual ROI mask revision
 
 Resolved for sequencing by D102 and for the first backend implementation by
@@ -2470,12 +2502,13 @@ complete structural preflight, and D106 propagates the same optional subset
 through Module 20 after acquisition-wide preflight. D107 persists the mixed
 automatic/revised acquisition graph through the versioned Module 21 v2
 boundary while retaining dual provenance and shared identity. D108 propagates
-the same optional subset through Module 22 and its v2 package publication
-without extending workbook presentation. Module 24 now
+the same optional subset through Module 22 and its v2 package publication.
+D109 completes strict human artifact finalization, the mutually exclusive
+verified Module 22 artifact-path route, and separate Module 17/14
+`roi_provenance` presentation without changing value sheets. Module 24 now
 provides immutable finalized/replayable contracts, exact automatic-mask binding, deterministic
 add/delete/replace/restore semantics, geometry recomputation, strict JSON
 persistence, and synthetic quantitative integration through one acquisition.
-Interactive editing ergonomics, human-facing artifact finalization,
-revision-chain/path consumption, export presentation, and the versioned Module
-23 revision binding remain separate future blocks. No real revision artifact,
-activation authority, or scientific acceptance exists.
+Interactive editing ergonomics, revision-chain consumption, and the versioned
+Module 23 revision binding remain separate future blocks. No real activation
+authority or scientific acceptance exists.

@@ -205,6 +205,28 @@ class Module14ExporterTests(unittest.TestCase):
                 ):
                     replace(valid, **{field_name: object()})
 
+    def test_exports_synthetic_manual_revision_provenance_in_a_separate_sheet(self) -> None:
+        revision_sha256 = "a" * 64
+        result = export_module14_workbooks(
+            (
+                _position_export("Exp Provenance", "Capture 1", "Position 1", (1,)),
+                _position_export(
+                    "Exp Provenance", "Capture 1", "Position 2", (1,),
+                    mask_source="manual_revision",
+                    revision_sha256=revision_sha256,
+                ),
+            ),
+            self.tmpdir,
+        )
+
+        workbook = result.workbook_paths[0]
+        provenance_index = _sheet_names(workbook).index("roi_provenance") + 1
+        sheet = _sheet_cells(workbook, provenance_index)
+        self.assertEqual(sheet["D2"], "automatic")
+        self.assertNotIn("E2", sheet)
+        self.assertEqual(sheet["D3"], "manual_revision")
+        self.assertEqual(sheet["E3"], revision_sha256)
+
     def test_preserves_nonconsecutive_roi_labels_without_running_upstream_modules(self) -> None:
         position_export = _position_export(
             "Exp Gapped Labels",
@@ -260,6 +282,8 @@ def _position_export(
     *,
     extra_issue: PipelineIssue | None = None,
     roi2_status: FretCalculationStatus = FretCalculationStatus.PASS,
+    mask_source: str = "automatic",
+    revision_sha256: str | None = None,
 ) -> Module14PositionExport:
     key = PositionKey(experiment=experiment, capture=capture, position=position)
     return Module14PositionExport(
@@ -272,6 +296,8 @@ def _position_export(
         pair=_pair(capture, position),
         auxiliary_metadata=(_auxiliary_metadata(),),
         issues=tuple(issue for issue in (extra_issue,) if issue is not None),
+        mask_source=mask_source,
+        revision_sha256=revision_sha256,
     )
 
 

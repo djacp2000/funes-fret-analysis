@@ -2,16 +2,23 @@
 
 ## Current state
 
-D108 propagates an optional subset of finalized root Module 24 revisions
-through the complete Module 22 runner. `run_reviewed_application(...)` passes
-the exact in-memory mapping to Module 20's existing acquisition-wide preflight;
-omitted positions remain automatic, the Module 22 result retains exact revision
-identity, and Module 21 v2 reconstructs the mixed published package. A draft
-revision fails before any experiment analysis. This block does not load or
-export standalone revision artifacts, extend Module 17/14 workbook
-presentation, add UI, bind Module 23, access `raw_data/`, activate data, or
-approve science. Two new synthetic Module 22 tests pass; `compileall`, 35
-focused Module 15/16/20/21/22 tests, and all 239 tests pass.
+D109 closes the Module 17/14 provenance presentation after the integrated D108
+work. Module 17 preserves the effective `mask_source` and `revision_sha256`
+from each completed Module 16 position, and Module 14 writes them in a
+separate `roi_provenance` sheet. Automatic rows contain no revision hash;
+manual rows contain the exact finalized hash. The D032 value sheets and
+numerical results are unchanged.
+
+The three integrated handoffs are now reflected together: Module 24 can
+strictly finalize and post-write replay-verify one supplied human draft without
+overwriting an existing artifact or changing scientific state; Module 22 can
+resolve one explicit, in-scope artifact path per position (mutually exclusive
+with its in-memory route), hash it before and after strict replay validation,
+and retain path/artifact/revision hashes; and the mixed graph remains preserved
+by Module 21 `funes.module21.reviewed_analysis_package.v2`. Focused Module
+14/17/21/22 tests pass (27), as does the complete 246-test suite. This close
+used no `raw_data/`, UI, Module 23 work, real activation, or scientific
+approval.
 
 D107 integrates optional finalized root Module 24 revisions into Module 21
 using the new exact package schema
@@ -813,6 +820,5 @@ The latest check confirmed:
 
 ## Suggested next-session prompt
 
-Continúa desde D105 con un único bloque sintético de propagación opcional de
-Module 24 desde Module 20, sin exportación, persistencia, UI, `raw_data`,
-Module 23 ni aprobación científica.
+Continúa desde D109 solo con un bloque futuro explícitamente autorizado; no
+inicies UI, Module 23, activación real, `raw_data` ni aprobación científica.

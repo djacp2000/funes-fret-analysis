@@ -64,6 +64,10 @@ class ReviewedExperimentExportResult:
                         "position_exports must retain the exact Module 16 "
                         f"{field_name} object"
                     )
+            if position_export.mask_source != position_result.mask_source:
+                raise ValueError("position_exports must preserve Module 16 mask_source")
+            if position_export.revision_sha256 != position_result.revision_sha256:
+                raise ValueError("position_exports must preserve Module 16 revision_sha256")
             if position_export.issues != position_result.issues:
                 raise ValueError(
                     "position_exports must preserve Module 16 issues unchanged"
@@ -107,6 +111,8 @@ def export_reviewed_experiment_workbook(
             fret=result.fret,
             pair=result.pair,
             issues=result.issues,
+            mask_source=result.mask_source,
+            revision_sha256=result.revision_sha256,
         )
         for result in analysis.position_results
     )

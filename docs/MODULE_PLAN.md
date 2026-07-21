@@ -1280,6 +1280,10 @@ must be chosen after representative data review.
   estimates, intensity QC records, temporal intensity records, FRET records,
   QC statuses, exclusion reasons, and structured issues as audit sheets in the
   same workbook.
+- Adds the `roi_provenance` audit sheet with one row per exported position. It
+  records the effective `automatic` or `manual_revision` mask source and, only
+  for a manual revision, the exact finalized Module 24 `revision_sha256`; value
+  sheets and their D032 layout remain unchanged.
 - Reads verified Module 3 auxiliary associations directly from each exported
   `TiffPair`; the metadata sheet includes the association method and referenced
   TIFF names, parsed SlideBook header values, raw log text, and every structured
@@ -1289,10 +1293,11 @@ must be chosen after representative data review.
 
 **Validation**
 
-- Six focused Module 14 synthetic tests cover workbook-per-experiment
+- Seven focused Module 14 synthetic tests cover workbook-per-experiment
   packaging, D032 header rows and spacer columns, QC status preservation,
   metadata, parameters, auxiliary metadata, issues, and rejection of an
-  incorrect runtime type for each required Module 8/10/11/12/13 result.
+  incorrect runtime type for each required Module 8/10/11/12/13 result, plus
+  automatic/manual mask-source and revision-hash provenance.
 - The D080 regression fixture contains only retained ROI labels `2` and `4`.
   It verifies those exact gaps in the wide headers and Module 8, 11, 12, and 13
   audit sheets. Spies confirm that Module 14 calls none of the public
@@ -1480,7 +1485,8 @@ must be chosen after representative data review.
   create the single D032 workbook for that experiment.
 - Preserve the exact assigned pair, Module 8/10/11/12/13 result objects,
   position order, positive-label gaps, pair-associated auxiliary metadata, and
-  aggregated issues supplied by D092/D093.
+  aggregated issues supplied by D092/D093, including the effective mask source
+  and finalized revision hash when Module 24 was used.
 - Do not discover or read TIFFs, run or rerun analysis, create an inspection
   or approval, change D044 selection, persist D090 review state or a separate
   analysis bundle, edit ROI, schedule multiple experiments, or activate real
@@ -1504,19 +1510,23 @@ must be chosen after representative data review.
 - Retains the source Module 16 result and exact Module 14 position inputs in
   the returned contract for auditability. Export failures carry the experiment
   identity and original error as the cause.
+- Requires every adapted `Module14PositionExport` to retain the exact Module
+  16 `mask_source` and `revision_sha256`, which Module 14 writes only to its
+  separate `roi_provenance` sheet.
 
 **Validation**
 
-- Four focused synthetic tests cover a real `.xlsx` write from two positions,
+- Focused synthetic tests cover a real `.xlsx` write from two positions,
   D089 ordering, exact upstream-object identity, unchanged issues, one and
   only one Module 14 invocation, rejection before export of an invalid input,
-  contextual write failure, and absence of upstream analysis or D090 snapshot
-  calls.
-- `compileall`, the focused 14-test Module 15/16/17 suite, and the complete
-  183-test suite pass. All Module 17 validation uses in-memory synthetic arrays
-  and temporary output paths; no file under `raw_data/` is read, no real-data
-  segmentation is run, and no scientific approval, review snapshot, ROI, mask,
-  profile, parameter, workbook layout, or production dependency changes.
+  contextual write failure, exact mask-source/revision-hash propagation, and
+  absence of upstream analysis or D090 snapshot calls.
+- The D108 closure runs 11 focused Module 14/17 tests, 27 focused
+  Module 14/17/21/22 tests, and the complete 246-test suite. All validation
+  uses in-memory synthetic arrays and temporary output paths; no file under
+  `raw_data/` is read, no real-data segmentation is run, and no scientific
+  approval, review snapshot, ROI, mask, profile, parameter, workbook layout,
+  or production dependency changes.
 
 ---
 
@@ -2060,17 +2070,31 @@ must be chosen after representative data review.
   through Module 20's complete acquisition preflight.
 - Preserves exact in-memory revision identity in the mixed result and persists
   that graph with Module 21 v2; omitted positions remain automatic.
-- Does not load or export standalone revision artifacts and does not extend
-  Module 17/14 workbook presentation with Module 24 provenance.
+- The later D108 closure also accepts explicitly supplied artifact paths through
+  the verified Module 22 route and presents the already effective provenance in
+  Module 17/14's separate `roi_provenance` sheet; this does not alter Module
+  22 publication, Module 21 v2, or D032 value sheets.
 - Adds no UI, revision-chain/path consumption, Module 23 binding, `raw_data`
   access, activation authority, scientific approval, or dependency.
-- `compileall`, 35 focused Module 15/16/20/21/22 tests, and all 239 tests pass.
+- Focused Module 22 artifact-route tests, 27 focused Module 14/17/21/22 tests,
+  and all 246 tests pass.
+
+**Integrated finalized-artifact and export-provenance close (D109)**
+
+- Finalizes one caller-supplied Module 24 draft only by deterministic replay
+  against its exact automatic Module 7/8 provenance, strict v1 artifact write,
+  reload, and trace/mask/hash comparison; it refuses overwrite and never turns
+  finalization into a scientific acceptance or D046 change.
+- Module 22's optional explicit artifact-path route is mutually exclusive with
+  the in-memory revision route, hashes each path before and after strict replay
+  validation, and retains the resolved path plus artifact and revision hashes.
+- Module 17/14 presents only the already effective `mask_source` and optional
+  `revision_sha256` in `roi_provenance`; neither Module 21 v2 persistence nor
+  D032 numerical/value-sheet behavior changes.
 
 **Deferred next blocks**
 
-- Human-facing revision creation/finalization and interactive editing remain
-  separate from this backend.
-- Revision-chain/artifact-path consumption, artifact/export presentation, and
-  the versioned Module 23 binding remain separate blocks.
+- Interactive revision editing, revision-chain consumption, and the versioned
+  Module 23 binding remain separate blocks.
 - A concrete corrected-mask activation plan remains prohibited until those
   blocks are implemented and synthetically validated under D102.

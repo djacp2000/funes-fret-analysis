@@ -46,6 +46,8 @@ class Module14PositionExport:
     pair: TiffPair | None = None
     auxiliary_metadata: tuple[AuxiliaryMetadataFile, ...] = ()
     issues: tuple[PipelineIssue, ...] = ()
+    mask_source: str = "automatic"
+    revision_sha256: str | None = None
 
     def __post_init__(self) -> None:
         required_results = (
@@ -60,6 +62,12 @@ class Module14PositionExport:
                 raise TypeError(f"{field_name} must be a {result_type.__name__}")
         if self.position_key.experiment is None:
             raise ValueError("Module 14 export requires an experiment label")
+        if self.mask_source not in {"automatic", "manual_revision"}:
+            raise ValueError("mask_source must be automatic or manual_revision")
+        if self.mask_source == "automatic" and self.revision_sha256 is not None:
+            raise ValueError("automatic masks cannot have revision_sha256")
+        if self.mask_source == "manual_revision" and not self.revision_sha256:
+            raise ValueError("manual_revision masks require revision_sha256")
         object.__setattr__(self, "auxiliary_metadata", tuple(self.auxiliary_metadata))
         object.__setattr__(self, "issues", tuple(self.issues))
 
@@ -151,6 +159,7 @@ def _build_experiment_workbook(
             _metadata_sheet(positions),
             _parameters_sheet(positions),
             _issues_sheet(positions),
+            _roi_provenance_sheet(positions),
         )
     )
     return tuple(sheets)
@@ -686,6 +695,23 @@ def _issues_sheet(positions: tuple[Module14PositionExport, ...]) -> _Sheet:
         rows.extend(_issue_rows(export, "module13_fret", export.fret.issues))
         rows.extend(_issue_rows(export, "module14_export_input", export.issues))
     return _table_sheet("issues", rows)
+
+
+def _roi_provenance_sheet(positions: tuple[Module14PositionExport, ...]) -> _Sheet:
+    """Export the effective Module 24 mask provenance without changing value sheets."""
+
+    rows = [_header(("experiment", "capture", "position", "mask_source", "revision_sha256"))]
+    for export in positions:
+        rows.append(
+            [
+                _Cell(export.position_key.experiment),
+                _Cell(export.position_key.capture),
+                _Cell(export.position_key.position),
+                _Cell(export.mask_source),
+                _Cell(export.revision_sha256),
+            ]
+        )
+    return _table_sheet("roi_provenance", rows)
 
 
 def _table_sheet(
