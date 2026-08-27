@@ -1,7 +1,0 @@
-scikit-image>=0.22
-scikit-learn>=1.4
-scipy>=1.11
-tifffile>=2024.8.10
-
-[cellpose]
-cellpose>=4.0

@@ -1,8 +1,52 @@
+# Python bytecode and test/type-checker caches
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
-# Source acquisitions and generated analysis artifacts remain outside version control.
+# Local environments and machine-specific settings
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.tmp
+*.bak
+*.swp
+*.swo
+Thumbs.db
+.DS_Store
+
+# Experimental source data and analysis outputs: never version these.
+input/
+input2/
 raw_data/
+output/
 outputs/
+
+# Build, packaging, and application-distribution artifacts
+build/
+dist/
+site/
+*.egg-info/
+*.egg
+*.whl
+*.tar.gz
+*.zip
+*.spec
+
+# Local recovery material
+.git-empty-backup/
+
+# Keep assets/ available for deliberately reviewed public resources. Generated
+# or private resources must live in one of these excluded paths.
+assets/generated/
+assets/private/
+assets/funes_logo.png

@@ -10,13 +10,13 @@ from .contracts import Channel, IssueSeverity, PipelineIssue, SourceFile
 
 TIFF_EXTENSIONS = frozenset({".tif", ".tiff"})
 
-_FILENAME_PATTERN = re.compile(
-    r"^(?P<capture>Capture\s+\d+)\s*-\s*"
+_FILENAME_CORE_PATTERN = re.compile(
+    r"(?P<capture>Capture\s+\d+)\s*-\s*"
     r"(?P<position>Position\s+\d+)_"
     r"(?P<xy>XY[^_]+)_"
     r"(?P<z_token>Z[^_]+)_"
     r"(?P<t_token>T[^_]+)_"
-    r"(?P<channel>C[01])\.(?:tif|tiff)$",
+    r"(?P<channel>C[01])",
     re.IGNORECASE,
 )
 
@@ -74,12 +74,23 @@ def discover_tiff_files(root: Path | str) -> FileDiscoveryResult:
 
 
 def parse_tiff_filename(path: Path | str) -> ParsedTiffFile | None:
-    """Parse a representative SlideBook TIFF filename, or return ``None``."""
+    """Parse one SlideBook filename core while preserving outer name text.
+
+    The ``Capture N - Position M_..._C0/C1`` core supplies the acquisition
+    identity.  Export systems may add arbitrary descriptive text before that
+    core or between its channel token and the TIFF extension; both parts are
+    retained as source metadata and never influence pairing.
+    """
 
     source_path = Path(path).resolve(strict=False)
-    match = _FILENAME_PATTERN.match(source_path.name)
-    if match is None:
+    if source_path.suffix.casefold() not in TIFF_EXTENSIONS:
         return None
+
+    stem = source_path.name[: -len(source_path.suffix)]
+    matches = tuple(_FILENAME_CORE_PATTERN.finditer(stem))
+    if len(matches) != 1:
+        return None
+    match = matches[0]
 
     channel = Channel(match.group("channel").upper())
     metadata = {
@@ -89,6 +100,8 @@ def parse_tiff_filename(path: Path | str) -> ParsedTiffFile | None:
         "Z": match.group("z_token"),
         "T": match.group("t_token"),
         "channel": channel.value,
+        "filename_prefix": stem[: match.start()],
+        "filename_suffix": stem[match.end() :],
     }
     source = SourceFile(
         path=source_path,

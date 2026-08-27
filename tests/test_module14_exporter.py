@@ -74,6 +74,7 @@ class Module14ExporterTests(unittest.TestCase):
         self.assertIn("metadata", sheet_names)
         self.assertIn("parameters", sheet_names)
         self.assertIn("issues", sheet_names)
+        self.assertNotIn("simple_results", sheet_names)
 
         ratio = _sheet_cells(exp_a, 1)
         self.assertEqual(ratio["A6"], "time_s")

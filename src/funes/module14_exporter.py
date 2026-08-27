@@ -106,8 +106,18 @@ class _ExportColumn:
 def export_module14_workbooks(
     positions: Iterable[Module14PositionExport],
     output_dir: Path | str,
+    *,
+    include_simple_results: bool = False,
 ) -> Module14ExportResult:
-    """Create one accepted D032 `.xlsx` workbook per experiment."""
+    """Create one accepted D032 `.xlsx` workbook per experiment.
+
+    ``include_simple_results`` is reserved for the provisional FUNES Lite
+    route. The reviewed exporter keeps its established workbook unchanged by
+    default.
+    """
+
+    if not isinstance(include_simple_results, bool):
+        raise TypeError("include_simple_results must be a bool")
 
     position_exports = tuple(positions)
     if not position_exports:
@@ -118,7 +128,11 @@ def export_module14_workbooks(
 
     created: list[Path] = []
     for experiment, experiment_positions in _positions_by_experiment(position_exports):
-        workbook = _build_experiment_workbook(experiment, experiment_positions)
+        workbook = _build_experiment_workbook(
+            experiment,
+            experiment_positions,
+            include_simple_results=include_simple_results,
+        )
         path = output_path / f"{_safe_file_stem(experiment)}.xlsx"
         _write_xlsx(path, workbook)
         created.append(path)
@@ -142,6 +156,8 @@ def _positions_by_experiment(
 def _build_experiment_workbook(
     experiment: str,
     positions: tuple[Module14PositionExport, ...],
+    *,
+    include_simple_results: bool = False,
 ) -> tuple[_Sheet, ...]:
     columns = _build_columns(positions)
     sheets = [
@@ -162,6 +178,8 @@ def _build_experiment_workbook(
             _roi_provenance_sheet(positions),
         )
     )
+    if include_simple_results:
+        sheets.append(_simple_results_sheet(positions))
     return tuple(sheets)
 
 
@@ -339,6 +357,35 @@ def _fret_long_sheet(positions: tuple[Module14PositionExport, ...]) -> _Sheet:
                 ]
             )
     return _table_sheet("fret_long", rows)
+
+
+def _simple_results_sheet(positions: tuple[Module14PositionExport, ...]) -> _Sheet:
+    """One row per ROI/frame with the requested C0, C1, and C0/C1 values."""
+
+    rows = [_header((
+        "experiment", "capture", "position", "roi_label", "frame_index",
+        "time_seconds", "C0_mean", "C1_mean", "ratio_C0_C1",
+        "measurement_basis", "ratio_status", "ratio_reasons",
+    ))]
+    intensity = {
+        (export.position_key, record.roi_label, record.frame.frame_index, record.channel): record
+        for export in positions
+        for record in export.temporal_intensity.records
+    }
+    for export in positions:
+        for record in export.fret.records:
+            c0 = intensity.get((export.position_key, record.roi_label, record.frame.frame_index, Channel.C0))
+            c1 = intensity.get((export.position_key, record.roi_label, record.frame.frame_index, Channel.C1))
+            rows.append([
+                _Cell(export.position_key.experiment), _Cell(export.position_key.capture),
+                _Cell(export.position_key.position), _Cell(record.roi_label),
+                _Cell(record.frame.frame_index), _Cell(record.frame.time_seconds),
+                _Cell(c0.background_corrected_mean if c0 else None),
+                _Cell(c1.background_corrected_mean if c1 else None), _Cell(record.ratio),
+                _Cell("background_corrected_mean"), _Cell(record.ratio_status.value),
+                _Cell(_join(record.ratio_reasons)),
+            ])
+    return _table_sheet("simple_results", rows)
 
 
 def _intensity_long_sheet(positions: tuple[Module14PositionExport, ...]) -> _Sheet:

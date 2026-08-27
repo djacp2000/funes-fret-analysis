@@ -5,10 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "funes"
 version = "0.1.0"
-description = "Modular analysis tools for two-channel FRET time series exported from SlideBook."
+description = "FUNES — FRET Unified Normalization and Extraction Suite"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Alejandro Pizzoni", email = "110594349+djacp2000@users.noreply.github.com"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
 dependencies = [
+    "numpy>=1.24",
     "scikit-image>=0.22",
     "scikit-learn>=1.4",
     "scipy>=1.11",
@@ -19,6 +32,14 @@ dependencies = [
 cellpose = [
     "cellpose>=4.0",
 ]
+standalone = [
+    "pyinstaller>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/djacp2000/funes-fret-analysis"
+Repository = "https://github.com/djacp2000/funes-fret-analysis"
+Issues = "https://github.com/djacp2000/funes-fret-analysis/issues"
 
 [tool.setuptools.package-dir]
 "" = "src"

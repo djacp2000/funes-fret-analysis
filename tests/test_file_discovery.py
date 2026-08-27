@@ -79,6 +79,32 @@ class FileDiscoveryTests(unittest.TestCase):
         self.assertEqual(result.files[0].source.original_name, lower_channel.name)
         self.assertEqual(result.issues, ())
 
+    def test_parse_preserves_arbitrary_filename_prefix_and_suffix(self) -> None:
+        path = Path(
+            "row1_capture5_position39_Capture 5 - Position 39_"
+            "XY1776376998_Z0_T00_C0_repeat-a.tif"
+        )
+
+        parsed = parse_tiff_filename(path)
+
+        self.assertIsNotNone(parsed)
+        assert parsed is not None
+        self.assertEqual(parsed.capture, "Capture 5")
+        self.assertEqual(parsed.position, "Position 39")
+        self.assertEqual(parsed.channel, Channel.C0)
+        self.assertEqual(
+            parsed.source.metadata["filename_prefix"], "row1_capture5_position39_"
+        )
+        self.assertEqual(parsed.source.metadata["filename_suffix"], "_repeat-a")
+
+    def test_parse_rejects_ambiguous_multiple_slidebook_cores(self) -> None:
+        path = Path(
+            "Capture 1 - Position 1_XY1_Z0_T0_C0_"
+            "Capture 2 - Position 2_XY2_Z0_T0_C1.tif"
+        )
+
+        self.assertIsNone(parse_tiff_filename(path))
+
 
 if __name__ == "__main__":
     unittest.main()
