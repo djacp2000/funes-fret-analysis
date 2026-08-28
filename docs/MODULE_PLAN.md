@@ -2129,3 +2129,24 @@ must be chosen after representative data review.
   position runner, and the versioned Module 23 binding remain separate blocks.
 - A concrete corrected-mask activation plan remains prohibited until those
   blocks are implemented and synthetically validated under D102.
+
+---
+
+## FUNES Lite source-only release
+
+**Status:** IMPLEMENTED (public source-only release; automatic/provisional)
+
+- The public identity is
+  `FUNES — FRET Unified Normalization and Extraction Suite`.
+- The standalone source is published on `origin/main` in commit `84a2a28`.
+  The release contains source, tests, build instructions, package metadata,
+  README, and license; it is not a binary distribution.
+- `simple_results` is exclusive to the Lite path and is enabled only through
+  its explicit Module 14 exporter opt-in. The reviewed Module 14 workbooks and
+  their established sheets remain unchanged.
+- The executable and ZIP are generated locally, ignored by Git, and not
+  published. No experimental data, analysis outputs, generated images,
+  executables, ZIP files, or other binaries are included in the release.
+- Publication does not confer scientific approval. FUNES Lite remains an
+  automatic, provisional route that is not scientifically validated and does
+  not replace the reviewed/activation paths.

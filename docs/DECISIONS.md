@@ -2525,6 +2525,25 @@ acquisition, or application runners nor UI, Module 23 binding, raw-data access,
 activation, approval, or a scientific conclusion. Tests use synthetic masks and
 temporary artifact paths only.
 
+### D125 - Publish FUNES Lite as a source-only reproducible release (2026-08-27)
+
+Use `FUNES — FRET Unified Normalization and Extraction Suite` as the public
+product identity. The standalone source is published on `origin/main` in
+commit `84a2a28` as a source-only release: source code, tests, build
+instructions, package metadata, README, and license are public, but no
+prebuilt distribution is part of the release.
+
+Keep the `simple_results` worksheet exclusive to the Lite route and require
+its explicit exporter opt-in. The reviewed Module 14 route retains its
+established workbook sheets and behavior unchanged. The standalone executable
+and ZIP remain generated artifacts, ignored by Git and not published. No
+experimental data, analysis outputs, generated images, executables, ZIP files,
+or other binaries were included.
+
+This publication does not change the scientific status of FUNES Lite: the
+route remains automatic and provisional, is not scientifically validated, and
+does not become a reviewed or activated analysis path by being public.
+
 ### P022 - Manual ROI mask revision
 
 Resolved for sequencing by D102 and for the first backend implementation by

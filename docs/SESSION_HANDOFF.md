@@ -2,6 +2,23 @@
 
 ## Current state
 
+The source-only FUNES Lite release is formally closed. Its public identity is
+`FUNES — FRET Unified Normalization and Extraction Suite`, and the standalone
+source is published on `origin/main` in commit `84a2a28`.
+
+The public release contains source, tests, build instructions, package
+metadata, README, and license only. `simple_results` remains exclusive to the
+Lite path through an explicit exporter opt-in; the reviewed Module 14
+workbooks and their established sheets did not change. The executable and ZIP
+remain locally generated artifacts, ignored by Git and not published. No
+experimental data, analysis outputs, generated images, executables, ZIP files,
+or other binaries were included.
+
+FUNES Lite remains automatic and provisional, is not scientifically validated,
+and does not become a reviewed or activated analysis route through publication.
+This documentation-only closure ran no tests or builds and did not modify any
+source data or generated-artifact directory.
+
 D111 integrates one already validated Module 24 revision chain only at the
 Modules 5--13 position-runner boundary. It accepts `RoiRevisionChainResult`,
 never artifact paths, and keeps that route mutually exclusive with the existing
