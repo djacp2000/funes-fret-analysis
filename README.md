@@ -1,4 +1,4 @@
-# FUNES — FRET Unified Normalization and Extraction Suite
+# F.U.N.E.S. — FRET Unified Normalization and Extraction Suite
 
 **FUNES Lite** es una aplicación portátil de Windows para el análisis automático y **provisional** de series temporales FRET de dos canales exportadas desde SlideBook como TIFF. No requiere instalar Python ni usar una línea de comandos.
 
