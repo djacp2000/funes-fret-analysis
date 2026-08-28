@@ -2528,10 +2528,11 @@ temporary artifact paths only.
 ### D125 - Publish FUNES Lite as a source-only reproducible release (2026-08-27)
 
 Use `FUNES — FRET Unified Normalization and Extraction Suite` as the public
-product identity. The standalone source is published on `origin/main` in
-commit `84a2a28` as a source-only release: source code, tests, build
-instructions, package metadata, README, and license are public, but no
-prebuilt distribution is part of the release.
+product identity. The standalone source entered `origin/main` in commit
+`84a2a28` as a source-only release: source code, tests, build instructions,
+package metadata, README, and license are public, but no prebuilt
+distribution is part of the release. The formal documentation close is
+recorded separately on `origin/main` in commit `058606f`.
 
 Keep the `simple_results` worksheet exclusive to the Lite route and require
 its explicit exporter opt-in. The reviewed Module 14 route retains its

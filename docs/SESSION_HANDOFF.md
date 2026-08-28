@@ -3,8 +3,9 @@
 ## Current state
 
 The source-only FUNES Lite release is formally closed. Its public identity is
-`FUNES — FRET Unified Normalization and Extraction Suite`, and the standalone
-source is published on `origin/main` in commit `84a2a28`.
+`FUNES — FRET Unified Normalization and Extraction Suite`. The standalone
+source entered `origin/main` in commit `84a2a28`, and the formal
+documentation close is recorded on `origin/main` in commit `058606f`.
 
 The public release contains source, tests, build instructions, package
 metadata, README, and license only. `simple_results` remains exclusive to the

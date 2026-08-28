@@ -2138,7 +2138,8 @@ must be chosen after representative data review.
 
 - The public identity is
   `FUNES — FRET Unified Normalization and Extraction Suite`.
-- The standalone source is published on `origin/main` in commit `84a2a28`.
+- The standalone source entered `origin/main` in commit `84a2a28`, and its
+  formal documentation close is recorded on `origin/main` in commit `058606f`.
   The release contains source, tests, build instructions, package metadata,
   README, and license; it is not a binary distribution.
 - `simple_results` is exclusive to the Lite path and is enabled only through

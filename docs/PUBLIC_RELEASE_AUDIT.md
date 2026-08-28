@@ -2,6 +2,7 @@
 
 - Fecha de cierre: 2026-08-27
 - Release de código fuente: `84a2a28` (`origin/main`)
+- Cierre documental formal: `058606f` (`origin/main`)
 - Identidad pública: `FUNES — FRET Unified Normalization and Extraction Suite`
 
 ## Clasificación final
@@ -10,7 +11,8 @@
 
 El código fuente del standalone FUNES Lite está publicado en `origin/main`.
 El commit `84a2a28` contiene código, tests, instrucciones reproducibles de
-build, metadatos del paquete, README y licencia. No es una publicación de la
+build, metadatos del paquete, README y licencia. El cierre documental formal
+del release quedó registrado aparte en `058606f`. No es una publicación de la
 distribución binaria.
 
 ## Alcance final verificado
