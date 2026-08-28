@@ -1,14 +1,14 @@
 # F.U.N.E.S. — FRET Unified Normalization and Extraction Suite
 
-**FUNES Lite** es una aplicación portátil de Windows para el análisis automático y **provisional** de series temporales FRET de dos canales exportadas desde SlideBook como TIFF. No requiere instalar Python ni usar una línea de comandos.
+**FUNES Lite** is a portable Windows application for automatic and **provisional** analysis of two-channel FRET time-series exported from SlideBook as TIFF files. It does not require installing Python or using a command line.
 
-Analiza cada adquisición C0/C1 válida que encuentre, segmenta células en el primer frame, mantiene las mismas máscaras para ambos canales y todos los frames, y calcula la razón explícita `C0 / C1`.
+It analyzes every valid C0/C1 acquisition it finds, segments cells on the first frame, keeps the same masks for both channels and all frames, and calculates the explicit `C0 / C1` ratio.
 
-> **Importante:** FUNES Lite no está científicamente validado ni es software clínico. Su análisis es automático y provisional; revise los resultados, las máscaras y los informes antes de utilizarlos para conclusiones científicas.
+> **Important:** FUNES Lite is not scientifically validated and is not clinical software. Its analysis is automatic and provisional; review the results, masks, and reports before using them for scientific conclusions.
 
-## Qué puede ejecutar un usuario hoy
+## What a user can run today
 
-La distribución `FUNES_lite_standalone_v1` incluye esta estructura:
+The `FUNES_lite_standalone_v1` distribution includes this structure:
 
 ```text
 FUNES_lite_standalone_v1/
@@ -16,84 +16,84 @@ FUNES_lite_standalone_v1/
 ├── funes_files/
 ├── input/
 ├── output/
-└── LEEME.txt
+└── README.txt
 ```
 
-Ejecute `FUNES_lite_standalone_v1.exe`. La ventana muestra el avance por posición y el progreso total; no solicita parámetros, confirmaciones ni argumentos. La aplicación comienza a procesar automáticamente el contenido de su carpeta vecina `input/`.
+Run `FUNES_lite_standalone_v1.exe`. The window shows progress by position and total progress; it asks for no parameters, confirmations, or arguments. The application starts processing the contents of its neighboring `input/` folder automatically.
 
-Todos los pares válidos se etiquetan como `Experiment 1` en esta edición Lite. La asignación de experimentos, la revisión manual de ROI y los flujos de análisis revisado no forman parte de la interfaz Lite.
+All valid pairs are labeled as `Experiment 1` in this Lite edition. Experiment assignment, manual ROI review, and reviewed-analysis workflows are not part of the Lite interface.
 
-## Preparar la entrada
+## Prepare Input
 
-1. Copie los TIFF de una o más adquisiciones a la carpeta `input/`, sin modificar los originales.
-2. Para cada posición debe haber un TIFF `C0` y otro `C1` con la misma identidad de adquisición. Se aceptan extensiones `.tif` y `.tiff`.
-3. Mantenga el patrón exportado por SlideBook, por ejemplo:
+1. Copy the TIFF files for one or more acquisitions into the `input/` folder without modifying the originals.
+2. Each position must have one `C0` TIFF and one `C1` TIFF with the same acquisition identity. `.tif` and `.tiff` extensions are accepted.
+3. Keep the pattern exported by SlideBook, for example:
 
    ```text
    Capture 1 - Position 1_XY1782521382_Z0_T00_C0.tif
    Capture 1 - Position 1_XY1782521382_Z0_T00_C1.tif
    ```
 
-   Los campos `Capture`, `Position`, `XY`, `Z` y `T` se conservan como metadatos. Cada TIFF se interpreta como una secuencia temporal ordenada de frames: `Z` y `T` del nombre no redefinen esa secuencia.
+   The `Capture`, `Position`, `XY`, `Z`, and `T` fields are preserved as metadata. Each TIFF is interpreted as an ordered temporal sequence of frames: `Z` and `T` in the filename do not redefine that sequence.
 
-4. Puede incluir archivos auxiliares de SlideBook, como `.log` o `.txt`, junto a los TIFF. Se preservan cuando pueden asociarse de forma inequívoca al par.
+4. You may include auxiliary SlideBook files, such as `.log` or `.txt`, alongside the TIFFs. They are preserved when they can be unambiguously associated with the pair.
 
-La aplicación sólo lee los TIFF y archivos auxiliares de entrada; no los renombra, sobrescribe ni modifica.
+The application only reads the input TIFFs and auxiliary files; it does not rename, overwrite, or modify them.
 
-## Obtener los resultados
+## Get Results
 
-Al terminar, revise la carpeta `output/`:
+When processing finishes, review the `output/` folder:
 
-| Ubicación | Contenido |
+| Location | Contents |
 | --- | --- |
-| `output/workbooks/` | Libro(s) Excel `.xlsx` con los resultados exportados. |
-| Hoja `simple_results` | Una fila por experimento, captura, posición, ROI y frame; incluye `C0_mean`, `C1_mean` y `ratio_C0_C1`. Los promedios de esta hoja están corregidos por fondo. |
-| Hoja `intensity_long` | Mediciones detalladas, incluidas las intensidades crudas, para trazabilidad. |
-| `output/roi_overlays/` | Máscaras de ROI del primer frame en PNG y SVG para revisión visual. |
-| `output/position_reports/` | Un informe HTML por posición completada o fallida. |
-| `output/simple_analysis_summary.json` | Resumen del lote: libros creados, pares completados, fallos e incidencias de descubrimiento/validación. |
+| `output/workbooks/` | Excel `.xlsx` workbook(s) with exported results. |
+| `simple_results` sheet | One row per experiment, capture, position, ROI, and frame; includes `C0_mean`, `C1_mean`, and `ratio_C0_C1`. The means on this sheet are background-corrected. |
+| `intensity_long` sheet | Detailed measurements, including raw intensities, for traceability. |
+| `output/roi_overlays/` | First-frame ROI masks in PNG and SVG for visual review. |
+| `output/position_reports/` | One HTML report per completed or failed position. |
+| `output/simple_analysis_summary.json` | Batch summary: created workbooks, completed pairs, failures, and discovery/validation issues. |
 
-La segmentación selecciona automáticamente el canal C0 o C1 mediante una métrica robusta de señal del primer frame. Cada ROI aceptada queda fija para C0, C1 y todos los frames temporales. La aplicación realiza corrección de fondo y calcula `C0 / C1`; los parámetros de esta ruta Lite son fijos y provisionales.
+Segmentation automatically selects channel C0 or C1 using a robust first-frame signal metric. Each accepted ROI remains fixed for C0, C1, and all temporal frames. The application performs background correction and calculates `C0 / C1`; the parameters for this Lite route are fixed and provisional.
 
-Un fallo en una posición no impide procesar las demás posiciones válidas. Consulte su informe HTML para el error. El lote se detiene sólo si `input/` no puede leerse, `output/` no puede utilizarse o ningún par válido logra exportarse.
+A failure in one position does not prevent processing the other valid positions. See that position's HTML report for the error. The batch stops only if `input/` cannot be read, `output/` cannot be used, or no valid pair can be exported.
 
-## Ruta Python opcional
+## Optional Python Route
 
-Para ejecutar la misma ruta automática desde un clon del repositorio (dirigido a desarrolladores o usuarios técnicos), se necesita Python 3.10 o posterior y las dependencias del proyecto:
+To run the same automatic route from a repository clone, for developers or technical users, Python 3.10 or later and the project dependencies are required:
 
 ```powershell
 python -m pip install -e .
 python scripts/run_simple_fret_analysis.py input output
 ```
 
-El primer argumento es la carpeta de entrada y el segundo la carpeta de salida. Esta ruta genera los mismos tipos de resultados provisionales; no convierte el análisis en una validación científica.
+The first argument is the input folder and the second is the output folder. This route generates the same provisional result types; it does not turn the analysis into scientific validation.
 
-Para construir la distribución portátil en Windows:
+To build the portable Windows distribution:
 
 ```powershell
 python -m pip install -e ".[standalone]"
 python scripts/build_funes_lite_standalone.py
 ```
 
-El build crea `dist/FUNES_lite_standalone_v1/` y su ZIP. Ambos son artefactos generados e ignorados por Git; no forman parte del código fuente publicado.
+The build creates `dist/FUNES_lite_standalone_v1/` and its ZIP. Both are generated artifacts ignored by Git; they are not part of the published source code.
 
-Para comprobar los contratos del proyecto con datos sintéticos:
+To check the project contracts with synthetic data:
 
 ```powershell
 python -m unittest discover -s tests
 ```
 
-## Límites conocidos
+## Known Limits
 
-- FUNES Lite no corrige automáticamente el drift ni ofrece edición interactiva de ROI.
-- Los límites de tamaño de ROI, la segmentación y los criterios de calidad de Lite no sustituyen una configuración o una revisión científica específica del experimento.
-- Los resultados deben revisarse con las máscaras y los informes laterales antes de interpretarse.
-- La ruta Lite no ejecuta los flujos de revisión, autorización o activación de análisis del proyecto modular.
+- FUNES Lite does not automatically correct drift or provide interactive ROI editing.
+- Lite ROI size limits, segmentation, and quality criteria do not replace experiment-specific scientific configuration or review.
+- Results must be reviewed with the masks and side reports before interpretation.
+- The Lite route does not run the modular project's review, authorization, or analysis-activation workflows.
 
-## Para desarrolladores
+## For Developers
 
-FUNES mantiene una arquitectura modular para descubrimiento de archivos, lectura TIFF, metadatos auxiliares, segmentación, control de calidad, extracción temporal, cálculo FRET y exportación auditable. Las especificaciones, decisiones y estado de los módulos están en [docs/PROJECT_SPEC.md](docs/PROJECT_SPEC.md), [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md) y [docs/DECISIONS.md](docs/DECISIONS.md).
+FUNES keeps a modular architecture for file discovery, TIFF reading, auxiliary metadata, segmentation, quality control, temporal extraction, FRET calculation, and auditable export. The specifications, decisions, and module status are in [docs/PROJECT_SPEC.md](docs/PROJECT_SPEC.md), [docs/MODULE_PLAN.md](docs/MODULE_PLAN.md), and [docs/DECISIONS.md](docs/DECISIONS.md).
 
-## Licencia
+## License
 
-MIT. Consulte [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

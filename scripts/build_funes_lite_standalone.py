@@ -24,14 +24,14 @@ def main() -> int:
     ], check=True, cwd=ROOT)
     (DIST_ROOT / "input").mkdir()
     (DIST_ROOT / "output").mkdir()
-    (DIST_ROOT / "LEEME.txt").write_text(
+    (DIST_ROOT / "README.txt").write_text(
         "FUNES — FRET Unified Normalization and Extraction Suite\n"
         "FUNES Lite standalone v1\n\n"
-        "1. Copie los TIFF C0/C1 y archivos auxiliares a input.\n"
-        "2. Ejecute FUNES_lite_standalone_v1.exe; no requiere Python.\n"
-        "3. Los XLS finales se guardan en output\\workbooks.\n"
-        "4. Los informes por posición y overlays quedan en output como resultados secundarios.\n\n"
-        "Advertencia: análisis automático provisional, no validado científicamente.\n",
+        "1. Copy the C0/C1 TIFF files and auxiliary files into input.\n"
+        "2. Run FUNES_lite_standalone_v1.exe; Python is not required.\n"
+        "3. Final XLS workbooks are saved in output\\workbooks.\n"
+        "4. Per-position reports and overlays remain in output as secondary results.\n\n"
+        "Warning: automatic provisional analysis, not scientifically validated.\n",
         encoding="utf-8",
     )
     print(shutil.make_archive(str(ROOT / "dist" / NAME), "zip", ROOT / "dist", NAME))
