@@ -1,12 +1,16 @@
 # F.U.N.E.S. — FRET Unified Normalization and Extraction Suite
 
-**FUNES Lite** is a portable Windows application for automatic and **provisional** analysis of two-channel FRET time-series exported from SlideBook as TIFF files. It does not require installing Python or using a command line.
+**FUNES Lite** is a portable Windows application that runs the complete automatic workflow for two-channel FRET time-series exported from SlideBook as TIFF files: it reads valid paired C0/C1 TIFFs and produces ready-to-use Excel (`.xlsx`) results. It does not require installing Python or using a command line.
 
 It analyzes every valid C0/C1 acquisition it finds, segments cells on the first frame, keeps the same masks for both channels and all frames, and calculates the explicit `C0 / C1` ratio.
 
 > **Important:** FUNES Lite is not scientifically validated and is not clinical software. Its analysis is automatic and provisional; review the results, masks, and reports before using them for scientific conclusions.
 
-## What a user can run today
+## What works today, end to end
+
+The Lite workflow is operational from TIFF input to Excel output. Put valid paired C0/C1 TIFFs in `input/`, run the application, and collect the exported workbook(s) from `output/workbooks/`. The accompanying overlays and position reports make each result reviewable.
+
+“Provisional” describes the scientific status of the automatic analysis settings; it does **not** mean that the TIFF-to-Excel workflow is unfinished or unavailable.
 
 The `FUNES_lite_standalone_v1` distribution includes this structure:
 
@@ -84,6 +88,8 @@ python -m unittest discover -s tests
 ```
 
 ## Known Limits
+
+These are scientific-validation and feature-scope limits; they do not prevent the standard TIFF-to-Excel workflow described above.
 
 - FUNES Lite does not automatically correct drift or provide interactive ROI editing.
 - Lite ROI size limits, segmentation, and quality criteria do not replace experiment-specific scientific configuration or review.
